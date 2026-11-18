@@ -16,4 +16,3 @@ class TenantController extends Controller
         return view('owner.tenants.index');
     }
 }
-

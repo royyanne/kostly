@@ -16,4 +16,3 @@ class RoomController extends Controller
         return view('owner.rooms.index');
     }
 }
-

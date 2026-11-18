@@ -16,4 +16,3 @@ class PropertyController extends Controller
         return view('owner.properties.index');
     }
 }
-

@@ -16,4 +16,3 @@ class InvoiceController extends Controller
         return view('owner.invoices.index');
     }
 }
-

@@ -16,4 +16,3 @@ class ExpenseController extends Controller
         return view('owner.expenses.index');
     }
 }
-

@@ -16,4 +16,3 @@ class ComplaintController extends Controller
         return view('owner.complaints.index');
     }
 }
-

@@ -106,4 +106,3 @@ class InvoiceService
         return $invoice->refresh();
     }
 }
-

@@ -37,4 +37,3 @@ class RoomFactory extends Factory
         ]);
     }
 }
-

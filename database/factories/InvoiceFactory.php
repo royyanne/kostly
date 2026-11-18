@@ -52,4 +52,3 @@ class InvoiceFactory extends Factory
         ]);
     }
 }
-

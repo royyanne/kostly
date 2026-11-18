@@ -15,4 +15,3 @@ class LandingPageController extends Controller
         return view('public.landing');
     }
 }
-

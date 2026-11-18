@@ -78,4 +78,3 @@ class SendInvoiceReminders extends Command
         return Command::SUCCESS;
     }
 }
-

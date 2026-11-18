@@ -37,4 +37,3 @@ class PaymentPortalController extends Controller
         ]);
     }
 }
-
