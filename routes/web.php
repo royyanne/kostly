@@ -52,8 +52,21 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('dashboard')->name('owner.')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        // CRUD Properti
         Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
+        Route::post('/properties', [PropertyController::class, 'store'])->name('properties.store');
+        Route::put('/properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
+        Route::delete('/properties/{property}', [PropertyController::class, 'destroy'])->name('properties.destroy');
+
+        // CRUD Kamar Kost & Visual Grid
         Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
+        Route::post('/rooms', [RoomController::class, 'store'])->name('rooms.store');
+        Route::put('/rooms/{room}', [RoomController::class, 'update'])->name('rooms.update');
+        Route::patch('/rooms/{room}/status', [RoomController::class, 'updateStatus'])->name('rooms.updateStatus');
+        Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
+
+        // Modul Manajemen Lanjutan (Tahap 4)
         Route::get('/tenants', [TenantController::class, 'index'])->name('tenants.index');
         Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');

@@ -87,4 +87,3 @@ test('unauthenticated user is redirected to login when visiting dashboard', func
 
     $response->assertRedirect(route('login'));
 });
-
