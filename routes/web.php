@@ -66,10 +66,31 @@ Route::middleware('auth')->group(function () {
         Route::patch('/rooms/{room}/status', [RoomController::class, 'updateStatus'])->name('rooms.updateStatus');
         Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
 
-        // Modul Manajemen Lanjutan (Tahap 4)
+        // CRUD Manajemen Penghuni
         Route::get('/tenants', [TenantController::class, 'index'])->name('tenants.index');
+        Route::post('/tenants', [TenantController::class, 'store'])->name('tenants.store');
+        Route::put('/tenants/{tenant}', [TenantController::class, 'update'])->name('tenants.update');
+        Route::patch('/tenants/{tenant}/checkout', [TenantController::class, 'checkout'])->name('tenants.checkout');
+        Route::delete('/tenants/{tenant}', [TenantController::class, 'destroy'])->name('tenants.destroy');
+
+        // CRUD Tagihan & Invoice Bulanan
         Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+        Route::post('/invoices', [InvoiceController::class, 'store'])->name('invoices.store');
+        Route::post('/invoices/generate-monthly', [InvoiceController::class, 'generateMonthly'])->name('invoices.generateMonthly');
+        Route::patch('/invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid'])->name('invoices.markPaid');
+        Route::post('/invoices/{invoice}/send-reminder', [InvoiceController::class, 'sendReminder'])->name('invoices.sendReminder');
+        Route::delete('/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
+
+        // CRUD Pengeluaran Operasional
         Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+        Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+        Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
+        Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
+
+        // CRUD Komplain Fasilitas
         Route::get('/complaints', [ComplaintController::class, 'index'])->name('complaints.index');
+        Route::post('/complaints', [ComplaintController::class, 'store'])->name('complaints.store');
+        Route::patch('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus'])->name('complaints.updateStatus');
+        Route::delete('/complaints/{complaint}', [ComplaintController::class, 'destroy'])->name('complaints.destroy');
     });
 });
