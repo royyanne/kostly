@@ -50,6 +50,16 @@ class Room extends Model
     }
 
     /**
+     * Riwayat pengajuan sewa untuk kamar ini.
+     *
+     * @return HasMany<Booking, $this>
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    /**
      * Penghuni aktif kamar ini saat ini.
      *
      * @return HasOne<Tenant, $this>

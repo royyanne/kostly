@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Enums\SubscriptionPlan;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -39,7 +40,39 @@ class AuthController extends Controller
         $remember = $request->boolean('remember');
 
         if (Auth::attempt($credentials, $remember)) {
+            $user = Auth::user();
+
+            if (! $user->is_active) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withErrors([
+                    'email' => 'Akun Anda sedang ditangguhkan atau dinonaktifkan. Silakan hubungi administrator.',
+                ])->onlyInput('email');
+            }
+
             $request->session()->regenerate();
+
+            if ($user->isSuperAdmin()) {
+                $intended = $request->session()->pull('url.intended');
+
+                if ($intended && str_contains($intended, '/admin')) {
+                    return redirect()->to($intended);
+                }
+
+                return redirect()->route('admin.dashboard');
+            }
+
+            if ($user->isTenant()) {
+                $intended = $request->session()->pull('url.intended');
+
+                if ($intended && str_contains($intended, '/tenant')) {
+                    return redirect()->to($intended);
+                }
+
+                return redirect()->route('tenant.dashboard');
+            }
 
             return redirect()->intended(route('owner.dashboard'));
         }
@@ -77,10 +110,14 @@ class AuthController extends Controller
             'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
         ]);
 
+        $role = $request->input('role') === 'tenant' ? UserRole::Tenant : UserRole::Owner;
+
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
+            'role' => $role,
+            'is_active' => true,
             'password' => Hash::make($validated['password']),
             'subscription_plan' => SubscriptionPlan::Free,
         ]);
@@ -88,6 +125,10 @@ class AuthController extends Controller
         Auth::login($user);
 
         $request->session()->regenerate();
+
+        if ($user->isTenant()) {
+            return redirect()->route('tenant.dashboard')->with('success', 'Selamat datang di Kostly! Akun penyewa Anda berhasil dibuat.');
+        }
 
         return redirect()->route('owner.dashboard')->with('success', 'Selamat datang di Kostly! Akun Anda berhasil dibuat.');
     }

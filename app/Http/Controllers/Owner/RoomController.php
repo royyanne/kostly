@@ -78,6 +78,11 @@ class RoomController extends Controller
         /** @var User $user */
         $user = $request->user();
 
+        // Validasi batasan kuota kamar (Feature Gating)
+        if (! $user->canCreateRoom()) {
+            return redirect()->back()->with('error', 'Batas kuota kamar tercapai! Paket Free hanya dapat mengelola maksimal 10 kamar kost. Silakan upgrade ke Paket Pro untuk menambah kamar tanpa batas.');
+        }
+
         // Pastikan properti yang dipilih adalah milik user
         $userPropertyIds = $user->properties()->pluck('id')->toArray();
 

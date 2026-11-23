@@ -17,6 +17,7 @@
 
             {{-- Desktop Navigation Links --}}
             <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+                <a href="#daftar-kost" class="font-bold text-[#1E3A8A] transition-colors hover:text-indigo-800">Cari Kost 🔍</a>
                 <a href="#fitur" class="transition-colors hover:text-[#1E3A8A]">Fitur Unggulan</a>
                 <a href="#cara-kerja" class="transition-colors hover:text-[#1E3A8A]">Cara Kerja</a>
                 <a href="#harga" class="transition-colors hover:text-[#1E3A8A]">Paket Harga</a>
@@ -191,6 +192,156 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- Public Kost Listing & Search Section --}}
+    <section id="daftar-kost" class="border-t border-slate-200/80 bg-slate-50/70 py-16 lg:py-24">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                    Katalog Kamar Kosong
+                </span>
+                <h2 class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                    Cari & Sewa Kost Idaman Anda
+                </h2>
+                <p class="mt-3 text-base text-slate-600">
+                    Pilihan kost terverifikasi dengan kamar siap huni, fasilitas lengkap, dan pengajuan sewa online tanpa perantara.
+                </p>
+            </div>
+
+            {{-- Filter & Search Bar --}}
+            <div class="mt-10 rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+                <form action="{{ route('landing') }}#daftar-kost" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-end">
+                    {{-- Filter Kata Kunci --}}
+                    <div>
+                        <label for="filter-search" class="block text-xs font-bold text-slate-700 mb-1">Cari Nama / Alamat</label>
+                        <div class="relative">
+                            <input type="text" id="filter-search" name="search" value="{{ $search ?? '' }}" placeholder="Contoh: Pasteur, Maranatha..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-indigo-400 focus:bg-white focus:outline-none">
+                        </div>
+                    </div>
+
+                    {{-- Filter Kota --}}
+                    <div>
+                        <label for="filter-city" class="block text-xs font-bold text-slate-700 mb-1">Pilih Kota</label>
+                        <select id="filter-city" name="city" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-indigo-400 focus:bg-white focus:outline-none">
+                            <option value="">Semua Kota</option>
+                            @foreach($availableCities ?? [] as $c)
+                                <option value="{{ $c }}" @selected(($selectedCity ?? '') === $c)>{{ $c }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Filter Harga Maksimal --}}
+                    <div>
+                        <label for="filter-price" class="block text-xs font-bold text-slate-700 mb-1">Maksimal Harga / Bln</label>
+                        <select id="filter-price" name="max_price" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-indigo-400 focus:bg-white focus:outline-none">
+                            <option value="">Semua Kisaran Harga</option>
+                            <option value="1500000" @selected(($maxPrice ?? '') == 1500000)>s.d. Rp 1.500.000</option>
+                            <option value="2000000" @selected(($maxPrice ?? '') == 2000000)>s.d. Rp 2.000.000</option>
+                            <option value="2500000" @selected(($maxPrice ?? '') == 2500000)>s.d. Rp 2.500.000</option>
+                            <option value="3500000" @selected(($maxPrice ?? '') == 3500000)>s.d. Rp 3.500.000</option>
+                        </select>
+                    </div>
+
+                    {{-- Action Button --}}
+                    <div class="flex items-center gap-2">
+                        <button type="submit" class="flex-1 rounded-xl bg-[#1E3A8A] hover:bg-[#172554] py-2.5 px-4 text-xs sm:text-sm font-bold text-white shadow-xs transition-colors flex items-center justify-center gap-1.5">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <span>Filter Kost</span>
+                        </button>
+                        @if(($search ?? false) || ($selectedCity ?? false) || ($maxPrice ?? false))
+                            <a href="{{ route('landing') }}#daftar-kost" class="rounded-xl border border-slate-200 bg-white py-2.5 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                                Reset
+                            </a>
+                        @endif
+                    </div>
+                </form>
+            </div>
+
+            {{-- Property Cards Grid --}}
+            <div class="mt-8">
+                @if(isset($properties) && $properties->isNotEmpty())
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                        @foreach($properties as $prop)
+                            @php
+                                $availRooms = $prop->rooms->where('status', \App\Enums\RoomStatus::Available);
+                                $minPrice = $availRooms->min('price');
+                            @endphp
+                            <div class="group rounded-3xl border border-slate-200/90 bg-white overflow-hidden shadow-xs hover:shadow-xl hover:border-indigo-200 transition-all flex flex-col justify-between">
+                                <div>
+                                    {{-- Image Thumbnail with Badges --}}
+                                    <div class="relative h-48 bg-gradient-to-tr from-indigo-900 to-slate-800 p-4 flex flex-col justify-between text-white">
+                                        <div class="flex items-center justify-between">
+                                            <span class="rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-xs font-semibold">
+                                                📍 {{ $prop->city ?: 'Kota Bandung' }}
+                                            </span>
+                                            @if($availRooms->isNotEmpty())
+                                                <span class="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-extrabold text-white shadow-xs">
+                                                    {{ $availRooms->count() }} Kamar Kosong
+                                                </span>
+                                            @else
+                                                <span class="rounded-full bg-rose-500 px-2.5 py-1 text-[11px] font-extrabold text-white shadow-xs">
+                                                    Penuh
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        <div>
+                                            <h3 class="text-xl font-black text-white group-hover:text-emerald-300 transition-colors line-clamp-1">
+                                                {{ $prop->name }}
+                                            </h3>
+                                        </div>
+                                    </div>
+
+                                    {{-- Card Body --}}
+                                    <div class="p-5 sm:p-6 space-y-3">
+                                        <p class="text-xs text-slate-500 line-clamp-2 flex items-start gap-1">
+                                            <svg class="h-4 w-4 shrink-0 text-slate-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                            <span>{{ $prop->address }}</span>
+                                        </p>
+
+                                        {{-- Facilities Preview --}}
+                                        <div class="flex flex-wrap gap-1.5 pt-1">
+                                            <span class="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">WiFi Cepat</span>
+                                            <span class="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">KM Dalam</span>
+                                            <span class="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">AC/Fan</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Card Footer: Price & CTA --}}
+                                <div class="p-5 sm:p-6 pt-0 border-t border-slate-100 mt-3 flex items-center justify-between">
+                                    <div>
+                                        <span class="text-[10px] text-slate-400 uppercase font-semibold">Mulai Dari</span>
+                                        <div class="text-base font-extrabold text-[#1E3A8A]">
+                                            @if($minPrice)
+                                                Rp {{ number_format((float) $minPrice, 0, ',', '.') }}<span class="text-xs font-normal text-slate-500">/bln</span>
+                                            @else
+                                                Hubungi Pengelola
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <a href="{{ route('public.kost.show', $prop->slug ?? $prop->id) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#172554] px-4 py-2 text-xs font-bold text-white transition-all shadow-xs">
+                                        <span>Lihat Kamar</span>
+                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center max-w-xl mx-auto">
+                        <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        <h4 class="mt-3 text-base font-bold text-slate-800">Tidak ada kost yang sesuai filter</h4>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">Coba sesuaikan pencarian kota atau rentang harga Anda.</p>
+                        <a href="{{ route('landing') }}#daftar-kost" class="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2 text-xs font-bold text-slate-700">
+                            Reset Filter Pencarian
+                        </a>
+                    </div>
+                @endif
             </div>
         </div>
     </section>

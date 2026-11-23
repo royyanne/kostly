@@ -4,12 +4,12 @@
     </x-slot:header>
 
     {{-- Welcome Banner & Quick Property Switcher --}}
-    <div class="mt-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xs">
-        <div>
+    <div class="mt-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6 bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xs">
+        <div class="min-w-0 flex-1">
             <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-50 text-[11px] font-bold text-[#1E3A8A] mb-2">
                 <span>Properti Aktif</span>
             </div>
-            <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate">
                 Halo, {{ $user->name }}! 👋
             </h2>
             <p class="text-xs sm:text-sm text-slate-500 mt-1">
@@ -18,7 +18,7 @@
         </div>
 
         {{-- Property Filter / Actions --}}
-        <div class="flex flex-wrap items-center gap-2.5">
+        <div class="shrink-0 flex flex-wrap items-center gap-2.5 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
             @if ($properties->count() > 1)
                 <form action="{{ route('owner.dashboard') }}" method="GET" class="inline-flex">
                     <select name="property_id" onchange="this.form.submit()" class="rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold text-slate-700 shadow-xs focus:border-[#1E3A8A] focus:outline-hidden">
@@ -31,15 +31,15 @@
                     </select>
                 </form>
             @elseif ($properties->isNotEmpty())
-                <div class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700">
-                    <svg class="h-4 w-4 text-[#1E3A8A]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                    <span>{{ $properties->first()->name }}</span>
+                <div class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 max-w-xs truncate">
+                    <svg class="h-4 w-4 text-[#1E3A8A] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    <span class="truncate">{{ $properties->first()->name }}</span>
                 </div>
             @endif
 
-            <a href="{{ route('owner.rooms.index') }}" class="inline-flex items-center gap-1.5 rounded-xl bg-[#1E3A8A] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#172554] transition-colors">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                <span>Kelola Kamar</span>
+            <a href="{{ route('owner.rooms.index') }}" class="inline-flex items-center gap-1.5 rounded-xl bg-[#1E3A8A] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#172554] transition-colors whitespace-nowrap">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span>+ Kelola Kamar</span>
             </a>
         </div>
     </div>

@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\SubscriptionPlan;
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -29,6 +30,8 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'phone' => '08'.fake()->numerify('##########'),
+            'role' => UserRole::Owner,
+            'is_active' => true,
             'subscription_plan' => SubscriptionPlan::Free,
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
@@ -43,6 +46,38 @@ class UserFactory extends Factory
     {
         return $this->state(fn () => [
             'subscription_plan' => SubscriptionPlan::Pro,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is a tenant.
+     */
+    public function tenant(): static
+    {
+        return $this->state(fn () => [
+            'role' => UserRole::Tenant,
+            'subscription_plan' => SubscriptionPlan::Free,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is a super admin.
+     */
+    public function superAdmin(): static
+    {
+        return $this->state(fn () => [
+            'role' => UserRole::SuperAdmin,
+            'subscription_plan' => SubscriptionPlan::Pro,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is suspended / inactive.
+     */
+    public function suspended(): static
+    {
+        return $this->state(fn () => [
+            'is_active' => false,
         ]);
     }
 

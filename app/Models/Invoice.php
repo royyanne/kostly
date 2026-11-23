@@ -20,7 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'status',
     'payment_method',
     'payment_url',
+    'payment_proof',
     'paid_at',
+    'rejected_reason',
 ])]
 class Invoice extends Model
 {
@@ -72,6 +74,17 @@ class Invoice extends Model
     public function scopeUnpaid(Builder $query): Builder
     {
         return $query->where('status', InvoiceStatus::Unpaid);
+    }
+
+    /**
+     * Scope tagihan menunggu verifikasi pembayaran.
+     *
+     * @param  Builder<Invoice>  $query
+     * @return Builder<Invoice>
+     */
+    public function scopePendingVerification(Builder $query): Builder
+    {
+        return $query->where('status', InvoiceStatus::PendingVerification);
     }
 
     /**

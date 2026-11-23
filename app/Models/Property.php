@@ -2,17 +2,75 @@
 
 namespace App\Models;
 
+use App\Enums\RoomStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
-#[Fillable(['user_id', 'name', 'address', 'description'])]
+#[Fillable([
+    'user_id',
+    'name',
+    'slug',
+    'address',
+    'city',
+    'image_url',
+    'description',
+    'facilities',
+])]
 class Property extends Model
 {
     use HasFactory;
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'facilities' => 'array',
+        ];
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Property $property) {
+            if (empty($property->slug)) {
+                $baseSlug = Str::slug($property->name) ?: 'kost';
+                $slug = $baseSlug;
+                $counter = 1;
+
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = "{$baseSlug}-{$counter}";
+                    $counter++;
+                }
+
+                $property->slug = $slug;
+            }
+        });
+    }
+
+    /**
+     * Resolve the route binding for slug or ID.
+     *
+     * @param  mixed  $value
+     * @param  string|null  $field
+     * @return Model|null
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('slug', $value)
+            ->orWhere('id', $value)
+            ->firstOrFail();
+    }
 
     /**
      * Pemilik kost yang memiliki properti ini.
@@ -35,6 +93,16 @@ class Property extends Model
     }
 
     /**
+     * Kamar dalam properti yang berstatus available (siap huni).
+     *
+     * @return HasMany<Room, $this>
+     */
+    public function availableRooms(): HasMany
+    {
+        return $this->rooms()->where('status', RoomStatus::Available);
+    }
+
+    /**
      * Seluruh penghuni kost di properti ini.
      *
      * @return HasMany<Tenant, $this>
@@ -42,6 +110,16 @@ class Property extends Model
     public function tenants(): HasMany
     {
         return $this->hasMany(Tenant::class);
+    }
+
+    /**
+     * Seluruh pengajuan sewa kamar di properti ini.
+     *
+     * @return HasMany<Booking, $this>
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
     }
 
     /**

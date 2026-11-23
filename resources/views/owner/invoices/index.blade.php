@@ -31,7 +31,7 @@
     </div>
 
     {{-- Summary Cards --}}
-    <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+    <div class="mt-6 grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6">
         {{-- Belum Lunas --}}
         <div class="rounded-2xl border border-amber-200 bg-white p-5 shadow-xs">
             <div class="flex items-center justify-between text-xs text-amber-800 font-semibold uppercase tracking-wider">
@@ -44,6 +44,20 @@
                 Rp {{ number_format((float) $unpaidSum, 0, ',', '.') }}
             </div>
             <p class="mt-1 text-[11px] text-slate-400">Menunggu pembayaran penghuni</p>
+        </div>
+
+        {{-- Perlu Verifikasi --}}
+        <div class="rounded-2xl border border-blue-200 bg-white p-5 shadow-xs">
+            <div class="flex items-center justify-between text-xs text-blue-800 font-semibold uppercase tracking-wider">
+                <span>Perlu Verifikasi</span>
+                <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-700 font-bold">
+                    {{ $pendingVerificationCount }}
+                </span>
+            </div>
+            <div class="mt-3 text-2xl font-black text-blue-600">
+                Rp {{ number_format((float) $pendingVerificationSum, 0, ',', '.') }}
+            </div>
+            <p class="mt-1 text-[11px] text-slate-400">Bukti transfer sudah diunggah</p>
         </div>
 
         {{-- Lunas --}}
@@ -71,7 +85,7 @@
             <div class="mt-3 text-2xl font-black text-rose-600">
                 Rp {{ number_format((float) $overdueSum, 0, ',', '.') }}
             </div>
-            <p class="mt-1 text-[11px] text-slate-400">Butuh pengingat WhatsApp lanjutan</p>
+            <p class="mt-1 text-[11px] text-slate-400">Butuh pengingat lanjutan</p>
         </div>
     </div>
 
@@ -81,6 +95,11 @@
             <a href="{{ route('owner.invoices.index', array_merge(request()->query(), ['status' => ''])) }}"
                 class="px-3.5 py-1.5 rounded-xl border transition-all {{ empty($statusFilter) ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100' }}">
                 Semua ({{ $totalCount }})
+            </a>
+            <a href="{{ route('owner.invoices.index', array_merge(request()->query(), ['status' => 'pending_verification'])) }}"
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border transition-all {{ $statusFilter === 'pending_verification' ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100' }}">
+                <span class="h-2 w-2 rounded-full {{ $statusFilter === 'pending_verification' ? 'bg-white' : 'bg-blue-500' }}"></span>
+                Perlu Verifikasi ({{ $pendingVerificationCount }})
             </a>
             <a href="{{ route('owner.invoices.index', array_merge(request()->query(), ['status' => 'unpaid'])) }}"
                 class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border transition-all {{ $statusFilter === 'unpaid' ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100' }}">
@@ -187,6 +206,20 @@
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold {{ $invoice->status->badgeClass() }}">
                                         {{ $invoice->status->label() }}
                                     </span>
+                                    @if ($invoice->payment_proof)
+                                        <div class="mt-1">
+                                            <button type="button" onclick="openProofModal('{{ asset('storage/' . $invoice->payment_proof) }}', '{{ $invoice->invoice_code }}', '{{ $invoice->tenant->name }}')"
+                                                class="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 font-bold underline">
+                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                <span>Lihat Bukti</span>
+                                            </button>
+                                        </div>
+                                    @endif
+                                    @if ($invoice->rejected_reason)
+                                        <p class="text-[10px] text-rose-500 mt-0.5 line-clamp-1" title="{{ $invoice->rejected_reason }}">
+                                            Ditolak: {{ $invoice->rejected_reason }}
+                                        </p>
+                                    @endif
                                 </td>
 
                                 {{-- Metode Bayar --}}
@@ -194,6 +227,9 @@
                                     @if ($invoice->status === App\Enums\InvoiceStatus::Paid)
                                         <span class="font-bold text-emerald-800">{{ $invoice->payment_method ?? 'Lunas' }}</span>
                                         <span class="block text-[10px] text-slate-400">{{ $invoice->paid_at?->translatedFormat('d/m/Y H:i') }}</span>
+                                    @elseif ($invoice->payment_method)
+                                        <span class="font-semibold text-slate-700">{{ $invoice->payment_method }}</span>
+                                        <span class="block text-[10px] text-slate-400">Metode Diajukan</span>
                                     @else
                                         <span class="text-slate-400 italic">Belum Dibayar</span>
                                     @endif
@@ -202,8 +238,23 @@
                                 {{-- Aksi --}}
                                 <td class="px-5 py-4 text-right">
                                     <div class="inline-flex items-center gap-2">
-                                        {{-- Tandai Lunas --}}
-                                        @if ($invoice->status !== App\Enums\InvoiceStatus::Paid)
+                                        @if ($invoice->status === App\Enums\InvoiceStatus::PendingVerification)
+                                            {{-- Verifikasi Lunas --}}
+                                            <form action="{{ route('owner.invoices.verify', $invoice) }}" method="POST" class="inline" onsubmit="return confirm('Verifikasi pembayaran invoice #{{ $invoice->invoice_code }} sebagai Lunas?');">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-colors" title="Verifikasi Lunas">
+                                                    Verifikasi
+                                                </button>
+                                            </form>
+
+                                            {{-- Tolak Bukti Bayar --}}
+                                            <button type="button" onclick="openRejectModal('{{ $invoice->id }}', '{{ $invoice->invoice_code }}')"
+                                                class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 font-bold hover:bg-rose-100 transition-colors" title="Tolak Bukti Transfer">
+                                                Tolak
+                                            </button>
+                                        @elseif ($invoice->status !== App\Enums\InvoiceStatus::Paid)
+                                            {{-- Tandai Lunas Manual --}}
                                             <button type="button" onclick="openMarkPaidModal({{ json_encode($invoice) }})"
                                                 class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-colors" title="Tandai Lunas">
                                                 Lunas
@@ -318,6 +369,61 @@
         </div>
     </div>
 
+    {{-- Modal Preview Bukti Transfer --}}
+    <div id="proof-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden">
+        <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Bukti Transfer Pembayaran</h3>
+                    <p class="text-xs text-slate-500" id="proof-modal-subtitle">-</p>
+                </div>
+                <button type="button" onclick="closeModal('proof-modal')" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-2 flex items-center justify-center max-h-96 overflow-hidden">
+                <img id="proof-modal-img" src="" alt="Bukti Transfer" class="max-h-88 max-w-full object-contain rounded-lg">
+            </div>
+
+            <div class="flex items-center justify-between gap-3 pt-4 border-t border-slate-100 mt-4">
+                <a id="proof-modal-link" href="" target="_blank" class="text-xs text-[#1E3A8A] font-bold hover:underline inline-flex items-center gap-1">
+                    <span>Buka Ukuran Penuh</span>
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+                <button type="button" onclick="closeModal('proof-modal')" class="rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal Tolak Bukti Transfer --}}
+    <div id="reject-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden">
+        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                <h3 class="text-base font-bold text-slate-900">Tolak Bukti Pembayaran</h3>
+                <button type="button" onclick="closeModal('reject-modal')" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+            </div>
+
+            <form id="reject-form" method="POST" class="space-y-4">
+                @csrf
+                @method('PATCH')
+
+                <p class="text-xs text-slate-600">
+                    Bukti transfer untuk tagihan <strong id="reject-invoice-code">#INV</strong> akan ditolak dan status tagihan dikembalikan menjadi <strong>Belum Lunas</strong>.
+                </p>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">Alasan Penolakan <span class="text-rose-500">*</span></label>
+                    <textarea name="rejected_reason" rows="3" required placeholder="Contoh: Foto bukti transfer blur/tidak terbaca, nominal transfer tidak sesuai..."
+                        class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs focus:border-rose-600 focus:outline-hidden"></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('reject-modal')" class="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Batal</button>
+                    <button type="submit" class="rounded-xl bg-rose-600 px-5 py-2 text-xs font-bold text-white hover:bg-rose-700">Kirim Penolakan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
@@ -325,6 +431,20 @@
 
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');
+        }
+
+        function openProofModal(imgUrl, invoiceCode, tenantName) {
+            document.getElementById('proof-modal-img').src = imgUrl;
+            document.getElementById('proof-modal-link').href = imgUrl;
+            document.getElementById('proof-modal-subtitle').textContent = `Tagihan #${invoiceCode} - ${tenantName}`;
+            openModal('proof-modal');
+        }
+
+        function openRejectModal(invoiceId, invoiceCode) {
+            const form = document.getElementById('reject-form');
+            form.action = `/dashboard/invoices/${invoiceId}/reject-payment`;
+            document.getElementById('reject-invoice-code').textContent = '#' + invoiceCode;
+            openModal('reject-modal');
         }
 
         function autoFillInvoiceAmount(select) {

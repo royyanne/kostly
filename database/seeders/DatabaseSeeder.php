@@ -6,6 +6,7 @@ use App\Enums\ComplaintStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\RoomStatus;
 use App\Enums\SubscriptionPlan;
+use App\Enums\UserRole;
 use App\Models\Complaint;
 use App\Models\Expense;
 use App\Models\Invoice;
@@ -24,25 +25,62 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // 0. Buat 1 Akun Default Super Admin
+        User::firstOrCreate(
+            ['email' => 'admin@kostly.id'],
+            [
+                'name' => 'Super Administrator',
+                'phone' => '081100000000',
+                'role' => UserRole::SuperAdmin,
+                'subscription_plan' => SubscriptionPlan::Pro,
+                'is_active' => true,
+                'email_verified_at' => now(),
+                'password' => Hash::make('password'),
+            ]
+        );
+
         // 1. Buat 1 Akun Pemilik Kost (Owner) Utama
         $owner = User::firstOrCreate(
             ['email' => 'owner@kostly.id'],
             [
                 'name' => 'Budi Santoso',
                 'phone' => '081234567890',
+                'role' => UserRole::Owner,
                 'subscription_plan' => SubscriptionPlan::Pro,
+                'is_active' => true,
+                'email_verified_at' => now(),
+                'password' => Hash::make('password'),
+            ]
+        );
+
+        // 1b. Buat 1 Akun Penyewa (Tenant) Default
+        $tenantUser = User::firstOrCreate(
+            ['email' => 'tenant@kostly.id'],
+            [
+                'name' => 'Andika Pratama',
+                'phone' => '081298765431',
+                'role' => UserRole::Tenant,
+                'subscription_plan' => SubscriptionPlan::Free,
+                'is_active' => true,
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
             ]
         );
 
         // 2. Buat Data Properti Kost Milik Owner
-        $property = Property::create([
-            'user_id' => $owner->id,
-            'name' => 'Kost Griya Nyaman Pasteur',
-            'address' => 'Jl. Pasteur No. 45, Sukajadi, Kota Bandung, Jawa Barat',
-            'description' => 'Kost modern eksklusif dekat kawasan kampus Maranatha & gerbang tol Pasteur. Fasilitas lengkap: Kamar mandi dalam, AC, Smart TV, WiFi 100 Mbps, Dapur bersama, Parkir mobil & motor luas, CCTV 24 Jam.',
-        ]);
+        $property = Property::firstOrCreate(
+            [
+                'user_id' => $owner->id,
+                'name' => 'Kost Griya Nyaman Pasteur',
+            ],
+            [
+                'slug' => 'kost-griya-nyaman-pasteur',
+                'city' => 'Kota Bandung',
+                'address' => 'Jl. Pasteur No. 45, Sukajadi, Kota Bandung, Jawa Barat',
+                'description' => 'Kost modern eksklusif dekat kawasan kampus Maranatha & gerbang tol Pasteur. Fasilitas lengkap: Kamar mandi dalam, AC, Smart TV, WiFi 100 Mbps, Dapur bersama, Parkir mobil & motor luas, CCTV 24 Jam.',
+                'facilities' => ['Kamar Mandi Dalam', 'AC', 'WiFi 100 Mbps', 'Kasur Spring Bed', 'Dapur Bersama', 'Parkir Luas', 'CCTV 24 Jam'],
+            ]
+        );
 
         // 3. Buat 10 Kamar dengan variasi status & harga
         $roomDefinitions = [
@@ -60,13 +98,17 @@ class DatabaseSeeder extends Seeder
 
         $rooms = [];
         foreach ($roomDefinitions as $def) {
-            $rooms[$def['room_number']] = Room::create([
-                'property_id' => $property->id,
-                'room_number' => $def['room_number'],
-                'type' => $def['type'],
-                'price' => $def['price'],
-                'status' => $def['status'],
-            ]);
+            $rooms[$def['room_number']] = Room::firstOrCreate(
+                [
+                    'property_id' => $property->id,
+                    'room_number' => $def['room_number'],
+                ],
+                [
+                    'type' => $def['type'],
+                    'price' => $def['price'],
+                    'status' => $def['status'],
+                ]
+            );
         }
 
         // 4. Buat 7 Data Penghuni Aktif untuk Kamar Terisi (Occupied)
@@ -139,124 +181,143 @@ class DatabaseSeeder extends Seeder
         $tenants = [];
         foreach ($tenantsData as $tData) {
             $room = $rooms[$tData['room_number']];
-            $tenants[$tData['room_number']] = Tenant::create([
-                'property_id' => $property->id,
-                'room_id' => $room->id,
-                'name' => $tData['name'],
-                'phone' => $tData['phone'],
-                'ktp_path' => null,
-                'emergency_contact' => $tData['emergency_contact'],
-                'start_date' => $tData['start_date'],
-                'due_day' => $tData['due_day'],
-                'access_token' => $tData['access_token'],
-                'is_active' => true,
-            ]);
+            $tenants[$tData['room_number']] = Tenant::updateOrCreate(
+                [
+                    'access_token' => $tData['access_token'],
+                ],
+                [
+                    'user_id' => $tData['room_number'] === '101' ? $tenantUser->id : null,
+                    'property_id' => $property->id,
+                    'room_id' => $room->id,
+                    'name' => $tData['name'],
+                    'phone' => $tData['phone'],
+                    'ktp_path' => null,
+                    'emergency_contact' => $tData['emergency_contact'],
+                    'start_date' => $tData['start_date'],
+                    'due_day' => $tData['due_day'],
+                    'is_active' => true,
+                ]
+            );
         }
 
         // 5. Buat Data Tagihan (Invoices)
         // a. Tagihan Lunas (Nabila Kamar 104)
-        Invoice::create([
-            'property_id' => $property->id,
-            'tenant_id' => $tenants['104']->id,
-            'invoice_code' => 'INV-202611-NB104',
-            'amount' => 2200000,
-            'additional_fee' => 0,
-            'total_amount' => 2200000,
-            'due_date' => Carbon::parse('2026-11-01'),
-            'status' => InvoiceStatus::Paid,
-            'payment_method' => 'QRIS Realtime',
-            'payment_url' => url('/pay/INV-202611-NB104'),
-            'paid_at' => Carbon::parse('2026-11-01 08:30:00'),
-        ]);
+        Invoice::updateOrCreate(
+            ['invoice_code' => 'INV-202611-NB104'],
+            [
+                'property_id' => $property->id,
+                'tenant_id' => $tenants['104']->id,
+                'amount' => 2200000,
+                'additional_fee' => 0,
+                'total_amount' => 2200000,
+                'due_date' => Carbon::parse('2026-11-01'),
+                'status' => InvoiceStatus::Paid,
+                'payment_method' => 'QRIS Realtime',
+                'payment_url' => url('/pay/INV-202611-NB104'),
+                'paid_at' => Carbon::parse('2026-11-01 08:30:00'),
+            ]
+        );
 
         // b. Tagihan Lunas (Rizky Kamar 105)
-        Invoice::create([
-            'property_id' => $property->id,
-            'tenant_id' => $tenants['105']->id,
-            'invoice_code' => 'INV-202610-RK105',
-            'amount' => 2200000,
-            'additional_fee' => 50000, // Misal charge kulkas mini
-            'total_amount' => 2250000,
-            'due_date' => Carbon::parse('2026-10-20'),
-            'status' => InvoiceStatus::Paid,
-            'payment_method' => 'Transfer Bank BCA',
-            'payment_url' => url('/pay/INV-202610-RK105'),
-            'paid_at' => Carbon::parse('2026-10-19 14:15:00'),
-        ]);
+        Invoice::updateOrCreate(
+            ['invoice_code' => 'INV-202610-RK105'],
+            [
+                'property_id' => $property->id,
+                'tenant_id' => $tenants['105']->id,
+                'amount' => 2200000,
+                'additional_fee' => 50000,
+                'total_amount' => 2250000,
+                'due_date' => Carbon::parse('2026-10-20'),
+                'status' => InvoiceStatus::Paid,
+                'payment_method' => 'Transfer Bank BCA',
+                'payment_url' => url('/pay/INV-202610-RK105'),
+                'paid_at' => Carbon::parse('2026-10-19 14:15:00'),
+            ]
+        );
 
         // c. Tagihan Belum Lunas Mendekati Jatuh Tempo H-3 (Andika Kamar 101)
-        Invoice::create([
-            'property_id' => $property->id,
-            'tenant_id' => $tenants['101']->id,
-            'invoice_code' => 'INV-202611-AP101',
-            'amount' => 1750000,
-            'additional_fee' => 0,
-            'total_amount' => 1750000,
-            'due_date' => now()->addDays(3)->toDateString(),
-            'status' => InvoiceStatus::Unpaid,
-            'payment_method' => null,
-            'payment_url' => url('/pay/INV-202611-AP101'),
-            'paid_at' => null,
-        ]);
+        Invoice::updateOrCreate(
+            ['invoice_code' => 'INV-202611-AP101'],
+            [
+                'property_id' => $property->id,
+                'tenant_id' => $tenants['101']->id,
+                'amount' => 1750000,
+                'additional_fee' => 0,
+                'total_amount' => 1750000,
+                'due_date' => now()->addDays(3)->toDateString(),
+                'status' => InvoiceStatus::Unpaid,
+                'payment_method' => null,
+                'payment_url' => url('/pay/INV-202611-AP101'),
+                'paid_at' => null,
+            ]
+        );
 
         // d. Tagihan Hari Ini Jatuh Tempo Hari-H (Dimas Kamar 103)
-        Invoice::create([
-            'property_id' => $property->id,
-            'tenant_id' => $tenants['103']->id,
-            'invoice_code' => 'INV-202611-DS103',
-            'amount' => 1750000,
-            'additional_fee' => 25000,
-            'total_amount' => 1775000,
-            'due_date' => now()->toDateString(),
-            'status' => InvoiceStatus::Unpaid,
-            'payment_method' => null,
-            'payment_url' => url('/pay/INV-202611-DS103'),
-            'paid_at' => null,
-        ]);
+        Invoice::updateOrCreate(
+            ['invoice_code' => 'INV-202611-DS103'],
+            [
+                'property_id' => $property->id,
+                'tenant_id' => $tenants['103']->id,
+                'amount' => 1750000,
+                'additional_fee' => 25000,
+                'total_amount' => 1775000,
+                'due_date' => now()->toDateString(),
+                'status' => InvoiceStatus::Unpaid,
+                'payment_method' => null,
+                'payment_url' => url('/pay/INV-202611-DS103'),
+                'paid_at' => null,
+            ]
+        );
 
         // e. Tagihan Jatuh Tempo / Terlambat (Maya Kamar 201)
-        Invoice::create([
-            'property_id' => $property->id,
-            'tenant_id' => $tenants['201']->id,
-            'invoice_code' => 'INV-202610-MA201',
-            'amount' => 1500000,
-            'additional_fee' => 0,
-            'total_amount' => 1500000,
-            'due_date' => now()->subDays(5)->toDateString(),
-            'status' => InvoiceStatus::Overdue,
-            'payment_method' => null,
-            'payment_url' => url('/pay/INV-202610-MA201'),
-            'paid_at' => null,
-        ]);
+        Invoice::updateOrCreate(
+            ['invoice_code' => 'INV-202610-MA201'],
+            [
+                'property_id' => $property->id,
+                'tenant_id' => $tenants['201']->id,
+                'amount' => 1500000,
+                'additional_fee' => 0,
+                'total_amount' => 1500000,
+                'due_date' => now()->subDays(5)->toDateString(),
+                'status' => InvoiceStatus::Overdue,
+                'payment_method' => null,
+                'payment_url' => url('/pay/INV-202610-MA201'),
+                'paid_at' => null,
+            ]
+        );
 
         // f. Tagihan Belum Lunas (Siti Kamar 102 & Fajar Kamar 202)
-        Invoice::create([
-            'property_id' => $property->id,
-            'tenant_id' => $tenants['102']->id,
-            'invoice_code' => 'INV-202611-SR102',
-            'amount' => 1750000,
-            'additional_fee' => 0,
-            'total_amount' => 1750000,
-            'due_date' => now()->addDays(8)->toDateString(),
-            'status' => InvoiceStatus::Unpaid,
-            'payment_method' => null,
-            'payment_url' => url('/pay/INV-202611-SR102'),
-            'paid_at' => null,
-        ]);
+        Invoice::updateOrCreate(
+            ['invoice_code' => 'INV-202611-SR102'],
+            [
+                'property_id' => $property->id,
+                'tenant_id' => $tenants['102']->id,
+                'amount' => 1750000,
+                'additional_fee' => 0,
+                'total_amount' => 1750000,
+                'due_date' => now()->addDays(8)->toDateString(),
+                'status' => InvoiceStatus::Unpaid,
+                'payment_method' => null,
+                'payment_url' => url('/pay/INV-202611-SR102'),
+                'paid_at' => null,
+            ]
+        );
 
-        Invoice::create([
-            'property_id' => $property->id,
-            'tenant_id' => $tenants['202']->id,
-            'invoice_code' => 'INV-202611-FN202',
-            'amount' => 1500000,
-            'additional_fee' => 0,
-            'total_amount' => 1500000,
-            'due_date' => now()->addDays(12)->toDateString(),
-            'status' => InvoiceStatus::Unpaid,
-            'payment_method' => null,
-            'payment_url' => url('/pay/INV-202611-FN202'),
-            'paid_at' => null,
-        ]);
+        Invoice::updateOrCreate(
+            ['invoice_code' => 'INV-202611-FN202'],
+            [
+                'property_id' => $property->id,
+                'tenant_id' => $tenants['202']->id,
+                'amount' => 1500000,
+                'additional_fee' => 0,
+                'total_amount' => 1500000,
+                'due_date' => now()->addDays(12)->toDateString(),
+                'status' => InvoiceStatus::Unpaid,
+                'payment_method' => null,
+                'payment_url' => url('/pay/INV-202611-FN202'),
+                'paid_at' => null,
+            ]
+        );
 
         // 6. Buat Pengeluaran Operasional (Expenses) Realistis
         $expenses = [
@@ -298,38 +359,61 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($expenses as $expense) {
-            Expense::create(array_merge($expense, ['property_id' => $property->id]));
+            Expense::firstOrCreate(
+                [
+                    'property_id' => $property->id,
+                    'title' => $expense['title'],
+                    'expense_date' => $expense['expense_date'],
+                ],
+                [
+                    'category' => $expense['category'],
+                    'amount' => $expense['amount'],
+                    'notes' => $expense['notes'],
+                ]
+            );
         }
 
         // 7. Buat Komplain Penghuni (Complaints) Realistis
-        Complaint::create([
-            'property_id' => $property->id,
-            'tenant_id' => $tenants['103']->id,
-            'room_id' => $rooms['103']->id,
-            'title' => 'AC Kamar 103 Kurang Dingin',
-            'description' => 'Halo Pak Budi, AC di kamar 103 hembusan anginnya terasa kurang dingin saat siang hari, mohon dibantu teknisi dicek freonnya.',
-            'photo_path' => null,
-            'status' => ComplaintStatus::InProgress,
-        ]);
+        Complaint::firstOrCreate(
+            [
+                'property_id' => $property->id,
+                'tenant_id' => $tenants['103']->id,
+                'title' => 'AC Kamar 103 Kurang Dingin',
+            ],
+            [
+                'room_id' => $rooms['103']->id,
+                'description' => 'Halo Pak Budi, AC di kamar 103 hembusan anginnya terasa kurang dingin saat siang hari, mohon dibantu teknisi dicek freonnya.',
+                'photo_path' => null,
+                'status' => ComplaintStatus::InProgress,
+            ]
+        );
 
-        Complaint::create([
-            'property_id' => $property->id,
-            'tenant_id' => $tenants['201']->id,
-            'room_id' => $rooms['201']->id,
-            'title' => 'Lampu Kamar Mandi Mati',
-            'description' => 'Lampu LED di dalam kamar mandi kamar 201 berkedip lalu mati total tadi pagi.',
-            'photo_path' => null,
-            'status' => ComplaintStatus::Resolved,
-        ]);
+        Complaint::firstOrCreate(
+            [
+                'property_id' => $property->id,
+                'tenant_id' => $tenants['201']->id,
+                'title' => 'Lampu Kamar Mandi Mati',
+            ],
+            [
+                'room_id' => $rooms['201']->id,
+                'description' => 'Lampu LED di dalam kamar mandi kamar 201 berkedip lalu mati total tadi pagi.',
+                'photo_path' => null,
+                'status' => ComplaintStatus::Resolved,
+            ]
+        );
 
-        Complaint::create([
-            'property_id' => $property->id,
-            'tenant_id' => $tenants['101']->id,
-            'room_id' => $rooms['101']->id,
-            'title' => 'Kran Wastafel Dapur Sedikit Menetes',
-            'description' => 'Kran wastafel di area dapur bersama lantai 1 ada sedikit rembesan air meskipun sudah ditutup rapat.',
-            'photo_path' => null,
-            'status' => ComplaintStatus::Pending,
-        ]);
+        Complaint::firstOrCreate(
+            [
+                'property_id' => $property->id,
+                'tenant_id' => $tenants['101']->id,
+                'title' => 'Kran Wastafel Dapur Sedikit Menetes',
+            ],
+            [
+                'room_id' => $rooms['101']->id,
+                'description' => 'Kran wastafel di area dapur bersama lantai 1 ada sedikit rembesan air meskipun sudah ditutup rapat.',
+                'photo_path' => null,
+                'status' => ComplaintStatus::Pending,
+            ]
+        );
     }
 }

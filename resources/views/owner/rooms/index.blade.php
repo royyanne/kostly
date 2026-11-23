@@ -6,8 +6,19 @@
     {{-- Page Header & Actions --}}
     <div class="mt-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xs">
         <div>
-            <h2 class="text-xl font-bold text-slate-900 tracking-tight">Kamar & Visual Grid</h2>
-            <p class="text-xs sm:text-sm text-slate-500 mt-1">
+            <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                <h2 class="text-xl font-bold text-slate-900 tracking-tight">Kamar & Visual Grid</h2>
+                @if ($user->isFree())
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold {{ $totalCount >= 10 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-200' }}">
+                        Kuota Paket Free: {{ $totalCount }}/10 Kamar Terpakai
+                    </span>
+                @else
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                        ⭐ Paket Pro: Unlimited Kamar
+                    </span>
+                @endif
+            </div>
+            <p class="text-xs sm:text-sm text-slate-500">
                 Monitor ketersediaan kamar secara visual, ubah status realtime, dan kelola harga sewa.
             </p>
         </div>
@@ -25,12 +36,37 @@
                 </button>
             </div>
 
-            <button type="button" onclick="openModal('add-room-modal')" class="inline-flex items-center gap-2 rounded-xl bg-[#1E3A8A] px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-indigo-950/20 hover:bg-[#172554] transition-colors">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                <span>Tambah Kamar Baru</span>
-            </button>
+            @if ($user->canCreateRoom())
+                <button type="button" onclick="openModal('add-room-modal')" class="inline-flex items-center gap-2 rounded-xl bg-[#1E3A8A] px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-indigo-950/20 hover:bg-[#172554] transition-colors">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    <span>Tambah Kamar Baru</span>
+                </button>
+            @else
+                <button type="button" onclick="openUpgradeModal()" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-amber-500/20 hover:from-amber-600 hover:to-amber-700 transition-all">
+                    <span>⭐ Kuota Penuh - Upgrade ke Pro</span>
+                </button>
+            @endif
         </div>
     </div>
+
+    @if (! $user->canCreateRoom())
+        {{-- Banner Ajakan Upgrade Pro --}}
+        <div class="mt-4 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-amber-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 font-bold text-lg">
+                    ⭐
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900">Batas Kuota Kamar Paket Free Telah Penuh (10/10 Kamar)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Akun Paket Free dibatasi maksimal 10 kamar kost. Memiliki kapasitas kamar lebih banyak? Tingkatkan ke Paket Pro untuk mengelola kamar tanpa batas.</p>
+                </div>
+            </div>
+            <a href="{{ route('owner.subscription.index') }}" class="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-colors shadow-xs">
+                <span>Upgrade ke Pro</span>
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </a>
+        </div>
+    @endif
 
     {{-- Filter Bar --}}
     <div class="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
@@ -403,5 +439,6 @@
             }
         }
     </script>
+    <x-upgrade-modal />
 </x-layouts.owner>
 

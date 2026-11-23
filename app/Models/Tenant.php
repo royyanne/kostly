@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 #[Fillable([
+    'user_id',
     'property_id',
     'room_id',
     'name',
@@ -19,6 +20,7 @@ use Illuminate\Support\Str;
     'emergency_contact',
     'start_date',
     'due_day',
+    'check_out_date',
     'access_token',
     'is_active',
 ])]
@@ -35,6 +37,7 @@ class Tenant extends Model
     {
         return [
             'start_date' => 'date',
+            'check_out_date' => 'date',
             'due_day' => 'integer',
             'is_active' => 'boolean',
         ];
@@ -50,6 +53,16 @@ class Tenant extends Model
                 $tenant->access_token = Str::random(40);
             }
         });
+    }
+
+    /**
+     * User akun yang terkait dengan penghuni ini (jika login).
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**

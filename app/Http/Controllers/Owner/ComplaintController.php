@@ -113,7 +113,7 @@ class ComplaintController extends Controller
     }
 
     /**
-     * Perbarui status penanganan komplain (Menunggu -> Diproses -> Selesai).
+     * Perbarui status penanganan komplain (Menunggu -> Diproses -> Selesai) dan berikan catatan tindak lanjut.
      */
     public function updateStatus(Request $request, Complaint $complaint): RedirectResponse
     {
@@ -126,9 +126,13 @@ class ComplaintController extends Controller
 
         $validated = $request->validate([
             'status' => ['required', new Enum(ComplaintStatus::class)],
+            'owner_response' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $complaint->update(['status' => $validated['status']]);
+        $complaint->update([
+            'status' => $validated['status'],
+            'owner_response' => $validated['owner_response'] ?? $complaint->owner_response,
+        ]);
 
         return redirect()->route('owner.complaints.index')->with('success', "Status komplain '{$complaint->title}' diubah menjadi '{$complaint->status->label()}'.");
     }

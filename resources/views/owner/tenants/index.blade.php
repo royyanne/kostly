@@ -147,16 +147,36 @@
 
                                 {{-- Portal Mandiri Link --}}
                                 <td class="px-5 py-4">
-                                    <div class="flex items-center gap-1.5">
-                                        <a href="{{ route('public.portal', $tenant->access_token) }}" target="_blank"
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-[#1E3A8A] font-bold hover:bg-indigo-100 transition-colors">
-                                            <span>Buka Portal</span>
-                                            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                                        </a>
-                                        <button type="button" onclick="navigator.clipboard.writeText('{{ url('/portal/' . $tenant->access_token) }}'); alert('Link portal anak kost berhasil disalin ke clipboard!');"
-                                            class="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100" title="Salin Tautan">
-                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                                        </button>
+                                    @php
+                                        $phoneDigits = preg_replace('/[^0-9]/', '', (str_starts_with($tenant->phone, '0') ? '62' . substr($tenant->phone, 1) : $tenant->phone));
+                                        $portalUrl = route('public.portal', $tenant->access_token);
+                                        $waText = urlencode("Halo {$tenant->name}, berikut adalah link Portal Mandiri Kost Anda (Kamar " . ($tenant->room?->room_number ?? '-') . "):\n\n" . $portalUrl . "\n\nAnda dapat mengecek riwayat tagihan, cetak kuitansi, dan mengirim komplain kerusakan kamar langsung tanpa perlu login.");
+                                    @endphp
+                                    <div class="flex flex-col gap-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            {{-- Tombol Buka Portal --}}
+                                            <a href="{{ $portalUrl }}" target="_blank"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-[#1E3A8A] font-bold hover:bg-indigo-100 transition-colors text-[11px]" title="Buka Portal Mandiri">
+                                                <span>Buka</span>
+                                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            </a>
+
+                                            {{-- Tombol Salin Link --}}
+                                            <button type="button" onclick="navigator.clipboard.writeText('{{ $portalUrl }}'); alert('Link portal anak kost berhasil disalin ke clipboard!');"
+                                                class="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors text-[11px]" title="Salin Link Portal">
+                                                <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                                <span>Salin</span>
+                                            </button>
+                                        </div>
+
+                                        {{-- Tombol Kirim Link via WhatsApp --}}
+                                        <div>
+                                            <a href="https://wa.me/{{ $phoneDigits }}?text={{ $waText }}" target="_blank"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-bold border border-emerald-200/60 hover:bg-emerald-100 transition-colors text-[11px]" title="Kirim Link ke WhatsApp Penghuni">
+                                                <svg class="h-3.5 w-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19.02L7.55 18.84L4.42 19.66L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67Z"/></svg>
+                                                <span>Kirim WA</span>
+                                            </a>
+                                        </div>
                                     </div>
                                 </td>
 
@@ -164,13 +184,10 @@
                                 <td class="px-5 py-4 text-right">
                                     <div class="inline-flex items-center gap-2">
                                         @if ($tenant->is_active)
-                                            <form action="{{ route('owner.tenants.checkout', $tenant) }}" method="POST" onsubmit="return confirm('Proses checkout untuk {{ $tenant->name }}? Kamar akan dikembalikan ke status Tersedia.');">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="font-bold text-amber-600 hover:underline" title="Checkout">
-                                                    Checkout
-                                                </button>
-                                            </form>
+                                            <button type="button" onclick="openCheckoutModal('{{ $tenant->id }}', '{{ $tenant->name }}', '{{ $tenant->room?->room_number ?? '-' }}')"
+                                                class="font-bold text-amber-600 hover:underline" title="Checkout">
+                                                Checkout
+                                            </button>
                                         @endif
 
                                         <button type="button" onclick="openEditTenantModal({{ json_encode($tenant) }})" class="font-bold text-[#1E3A8A] hover:underline">
@@ -336,6 +353,33 @@
         </div>
     </div>
 
+    {{-- Modal Konfirmasi Checkout Penghuni --}}
+    <div id="checkout-tenant-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden">
+        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                <h3 class="text-base font-bold text-slate-900">Konfirmasi Check-Out Penghuni</h3>
+                <button type="button" onclick="closeModal('checkout-tenant-modal')" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+            </div>
+
+            <form id="checkout-tenant-form" method="POST" class="space-y-4">
+                @csrf
+                @method('PATCH')
+
+                <div class="rounded-xl border border-amber-200 bg-amber-50/60 p-4 text-xs text-amber-900">
+                    <p class="font-bold mb-1">Akhiri masa sewa untuk <span id="checkout-tenant-name">-</span>?</p>
+                    <p class="text-slate-600">
+                        Penghuni di <strong id="checkout-room-number">Kamar -</strong> akan dinonaktifkan, dicatat tanggal checkout hari ini, dan kamar otomatis berstatus <strong>Tersedia (Available)</strong> kembali untuk calon penyewa lain.
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('checkout-tenant-modal')" class="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Batal</button>
+                    <button type="submit" class="rounded-xl bg-amber-600 px-5 py-2 text-xs font-bold text-white hover:bg-amber-700 shadow-xs">Ya, Akhiri Sewa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
@@ -343,6 +387,14 @@
 
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');
+        }
+
+        function openCheckoutModal(tenantId, tenantName, roomNumber) {
+            const form = document.getElementById('checkout-tenant-form');
+            form.action = `/dashboard/tenants/${tenantId}/checkout`;
+            document.getElementById('checkout-tenant-name').textContent = tenantName;
+            document.getElementById('checkout-room-number').textContent = 'Kamar ' + roomNumber;
+            openModal('checkout-tenant-modal');
         }
 
         function openEditTenantModal(tenant) {

@@ -8,6 +8,7 @@ use App\Enums\RoomStatus;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -15,10 +16,14 @@ class DashboardController extends Controller
     /**
      * Tampilkan halaman utama dashboard pemilik kost dengan ringkasan statistik.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         /** @var User $user */
         $user = $request->user();
+
+        if ($user->isSuperAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
 
         // Data properti pemilik
         $properties = $user->properties()->withCount(['rooms', 'tenants'])->get();

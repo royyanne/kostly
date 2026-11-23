@@ -39,6 +39,8 @@ class InvoiceController extends Controller
         $totalCount = (clone $baseInvoicesQuery)->count();
         $unpaidCount = (clone $baseInvoicesQuery)->where('status', InvoiceStatus::Unpaid)->count();
         $unpaidSum = (clone $baseInvoicesQuery)->where('status', InvoiceStatus::Unpaid)->sum('total_amount');
+        $pendingVerificationCount = (clone $baseInvoicesQuery)->where('status', InvoiceStatus::PendingVerification)->count();
+        $pendingVerificationSum = (clone $baseInvoicesQuery)->where('status', InvoiceStatus::PendingVerification)->sum('total_amount');
         $paidCount = (clone $baseInvoicesQuery)->where('status', InvoiceStatus::Paid)->count();
         $paidSum = (clone $baseInvoicesQuery)->where('status', InvoiceStatus::Paid)->sum('total_amount');
         $overdueCount = (clone $baseInvoicesQuery)->where('status', InvoiceStatus::Overdue)->count();
@@ -76,6 +78,8 @@ class InvoiceController extends Controller
             'totalCount' => $totalCount,
             'unpaidCount' => $unpaidCount,
             'unpaidSum' => $unpaidSum,
+            'pendingVerificationCount' => $pendingVerificationCount,
+            'pendingVerificationSum' => $pendingVerificationSum,
             'paidCount' => $paidCount,
             'paidSum' => $paidSum,
             'overdueCount' => $overdueCount,
@@ -170,6 +174,55 @@ class InvoiceController extends Controller
         ]);
 
         return redirect()->route('owner.invoices.index')->with('success', "Tagihan #{$invoice->invoice_code} berhasil ditandai Lunas via {$validated['payment_method']}!");
+    }
+
+    /**
+     * Verifikasi bukti pembayaran dari penyewa dan tandai tagihan lunas.
+     */
+    public function verifyPayment(Request $request, Invoice $invoice): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($invoice->property->user_id !== $user->id) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $invoice->update([
+            'status' => InvoiceStatus::Paid,
+            'paid_at' => now(),
+            'rejected_reason' => null,
+        ]);
+
+        return redirect()->route('owner.invoices.index')
+            ->with('success', "Pembayaran tagihan #{$invoice->invoice_code} berhasil diverifikasi Lunas!");
+    }
+
+    /**
+     * Tolak bukti transfer pembayaran yang diunggah penyewa.
+     */
+    public function rejectPayment(Request $request, Invoice $invoice): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($invoice->property->user_id !== $user->id) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $validated = $request->validate([
+            'rejected_reason' => ['required', 'string', 'max:500'],
+        ], [
+            'rejected_reason.required' => 'Alasan penolakan bukti pembayaran wajib diisi.',
+        ]);
+
+        $invoice->update([
+            'status' => InvoiceStatus::Unpaid,
+            'rejected_reason' => $validated['rejected_reason'],
+        ]);
+
+        return redirect()->route('owner.invoices.index')
+            ->with('info', "Bukti transfer tagihan #{$invoice->invoice_code} telah ditolak. Penyewa dapat mengunggah bukti baru.");
     }
 
     /**

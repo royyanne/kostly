@@ -15,7 +15,7 @@ class PropertyFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'name' => 'Kost '.fake()->cityPrefix().' '.fake()->lastName(),
+            'name' => 'Kost '.fake()->randomElement(['Putra', 'Putri', 'Bahagia', 'Sejahtera', 'Harmoni']).' '.fake()->lastName(),
             'address' => fake()->address(),
             'description' => 'Kost nyaman, aman, dan strategis dekat fasilitas umum.',
         ];

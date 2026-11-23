@@ -93,6 +93,27 @@
                             {{ $complaint->description }}
                         </p>
 
+                        @if ($complaint->photo_path)
+                            <div class="mt-2.5">
+                                <a href="{{ asset('storage/' . $complaint->photo_path) }}" target="_blank"
+                                    class="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-100 transition-colors">
+                                    <svg class="h-3.5 w-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    <span>Lihat Foto Lampiran Kerusakan</span>
+                                </a>
+                            </div>
+                        @endif
+
+                        {{-- Balasan Owner / Catatan Penanganan --}}
+                        @if ($complaint->owner_response)
+                            <div class="mt-3 p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-xs text-emerald-900">
+                                <div class="flex items-center gap-1 font-bold text-emerald-800 mb-1">
+                                    <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>Tindak Lanjut Pemilik:</span>
+                                </div>
+                                <p class="text-slate-700 leading-relaxed">{{ $complaint->owner_response }}</p>
+                            </div>
+                        @endif
+
                         {{-- Reporter Info --}}
                         <div class="mt-4 flex items-center justify-between text-xs pt-3 border-t border-slate-100">
                             <div>
@@ -108,15 +129,11 @@
 
                     {{-- Actions: Quick Status Changer & Delete --}}
                     <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <form action="{{ route('owner.complaints.updateStatus', $complaint) }}" method="POST" class="inline-flex">
-                            @csrf
-                            @method('PATCH')
-                            <select name="status" onchange="this.form.submit()" class="rounded-lg border border-slate-200 bg-slate-50 py-1 px-2 text-[11px] font-semibold text-slate-700 hover:border-slate-300 focus:outline-hidden">
-                                <option value="pending" {{ $complaint->status === App\Enums\ComplaintStatus::Pending ? 'selected' : '' }}>Set: Menunggu</option>
-                                <option value="in_progress" {{ $complaint->status === App\Enums\ComplaintStatus::InProgress ? 'selected' : '' }}>Set: Diproses</option>
-                                <option value="resolved" {{ $complaint->status === App\Enums\ComplaintStatus::Resolved ? 'selected' : '' }}>Set: Selesai</option>
-                            </select>
-                        </form>
+                        <button type="button" onclick="openRespondModal({{ json_encode($complaint) }})"
+                            class="inline-flex items-center gap-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 text-[11px] font-bold text-[#1E3A8A] transition-colors">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            <span>Tindak Lanjut & Balas</span>
+                        </button>
 
                         <form action="{{ route('owner.complaints.destroy', $complaint) }}" method="POST" onsubmit="return confirm('Hapus tiket komplain ini?');" class="inline">
                             @csrf
@@ -181,6 +198,45 @@
         </div>
     </div>
 
+    {{-- Modal Tindak Lanjut & Balas Komplain --}}
+    <div id="respond-complaint-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden">
+        <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Tindak Lanjut & Balas Komplain</h3>
+                    <p class="text-xs text-slate-500" id="respond-complaint-subtitle">-</p>
+                </div>
+                <button type="button" onclick="closeModal('respond-complaint-modal')" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+            </div>
+
+            <form id="respond-complaint-form" method="POST" class="space-y-4">
+                @csrf
+                @method('PATCH')
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700">Status Penanganan</label>
+                    <select id="respond-status" name="status" required class="mt-1 block w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:border-[#1E3A8A] focus:outline-hidden">
+                        <option value="pending">Menunggu Tindak Lanjut</option>
+                        <option value="in_progress">Sedang Diproses Teknisi</option>
+                        <option value="resolved">Selesai Diperbaiki</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700">Catatan Tindak Lanjut / Pesan untuk Penghuni</label>
+                    <textarea id="respond-owner-response" name="owner_response" rows="4" placeholder="Misal: Teknisi AC sudah dijadwalkan datang besok jam 10 pagi, mohon ada orang di kamar..."
+                        class="mt-1 block w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs focus:border-[#1E3A8A] focus:outline-hidden"></textarea>
+                    <span class="text-[10px] text-slate-400 mt-1 block">Catatan ini akan langsung terlihat oleh anak kost di portal mandiri mereka.</span>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('respond-complaint-modal')" class="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Batal</button>
+                    <button type="submit" class="rounded-xl bg-[#1E3A8A] px-5 py-2 text-xs font-bold text-white hover:bg-[#172554]">Simpan Tindak Lanjut</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
@@ -188,6 +244,15 @@
 
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');
+        }
+
+        function openRespondModal(complaint) {
+            const form = document.getElementById('respond-complaint-form');
+            form.action = `/dashboard/complaints/${complaint.id}/status`;
+            document.getElementById('respond-complaint-subtitle').textContent = `Tiket: ${complaint.title} (${complaint.tenant ? complaint.tenant.name : '-'})`;
+            document.getElementById('respond-status').value = complaint.status;
+            document.getElementById('respond-owner-response').value = complaint.owner_response || '';
+            openModal('respond-complaint-modal');
         }
     </script>
 </x-layouts.owner>

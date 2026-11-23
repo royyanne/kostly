@@ -171,13 +171,16 @@ class TenantController extends Controller
 
         $roomId = $tenant->room_id;
 
-        $tenant->update(['is_active' => false]);
+        $tenant->update([
+            'is_active' => false,
+            'check_out_date' => now()->toDateString(),
+        ]);
 
         if ($roomId) {
             Room::where('id', $roomId)->update(['status' => RoomStatus::Available]);
         }
 
-        return redirect()->route('owner.tenants.index')->with('success', "Penghuni '{$tenant->name}' telah checkout. Kamar kini berstatus Tersedia.");
+        return redirect()->route('owner.tenants.index')->with('success', "Penghuni '{$tenant->name}' telah berhasil di-checkout. Kamar kini kembali berstatus Tersedia.");
     }
 
     /**

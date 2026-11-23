@@ -39,6 +39,11 @@ class PropertyController extends Controller
         /** @var User $user */
         $user = $request->user();
 
+        // Validasi batasan kuota paket (Feature Gating)
+        if (! $user->canCreateProperty()) {
+            return redirect()->back()->with('error', 'Batas kuota properti tercapai! Paket Free hanya dapat mengelola maksimal 1 properti kost. Silakan upgrade ke Paket Pro untuk mengelola properti tanpa batas.');
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'address' => ['required', 'string'],

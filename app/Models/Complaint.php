@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'description',
     'photo_path',
     'status',
+    'owner_response',
 ])]
 class Complaint extends Model
 {
